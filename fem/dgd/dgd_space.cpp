@@ -1,9 +1,9 @@
 // DGD space class definition
 
 #include "dgd_space.hpp"
-#include "../../tests/unit/catch.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <numeric>
 
 namespace mfem {
@@ -34,10 +34,8 @@ DGDSpace::DGDSpace(mfem::Mesh *m, const mfem::FiniteElementCollection *fec,
   InitializeStencil();
 
   // build the initial prolongation matrix
-  cP = std::unique_ptr<SparseMatrix>(
-      new SparseMatrix(GetVSize(), GetTrueVSize()));
-  // buildProlongationMatrix(center);
-  out << "Check cP size: " << cP->Height() << " x " << cP->Width() << '\n';
+  cP = std::make_unique<SparseMatrix>(GetVSize(), GetTrueVSize());
+  BuildProlongationMatrix(center);
 }
 
 void DGDSpace::InitializeStencil() {
@@ -123,6 +121,58 @@ std::vector<size_t> DGDSpace::sort_indexes(const std::vector<double> &v) {
               [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
 
   return idx;
+}
+
+void DGDSpace::BuildProlongationMatrix(const Vector &x) {
+  DenseMatrix V, Vn;
+  DenseMatrix localMat;
+  int num_el = mesh->GetNE();
+  for (int i = 0; i < num_el; ++i) {
+    // 1. build basis matrix
+    BuildElementDataMat(i, x, V, Vn);
+
+    // 2. build the interpolation matrix
+    SolveLocalProlongationMat(i, V, Vn, localMat);
+
+    // 3. Assemble prolongation matrix
+    AssembleProlongationMatrix(i, localMat);
+  }
+  cP->Finalize();
+  // ofstream cp_save("prolong.txt");
+  // cP->PrintMatlab(cp_save);
+  // cp_save.close();
+}
+
+void DGDSpace::BuildElementDataMat(int el_id, const Vector &x, DenseMatrix &V,
+                                   DenseMatrix &Vn) const {
+  // get element related data
+  const Element *el = mesh->GetElement(el_id);
+  const FiniteElement *fe =
+      fec->FiniteElementForGeometry(el->GetGeometryType());
+  const int numDofs = fe->GetDof();
+  ElementTransformation *eltransf = mesh->GetElementTransformation(el_id);
+
+  // get the dofs coord
+  Array<Vector> dofs_coord;
+  // std::vector<std::vector<double>> dofs_coord;
+  dofs_coord.SetSize(numDofs);
+  int dim = mesh->Dimension();
+  Vector coord(dim);
+  for (int k = 0; k < numDofs; k++) {
+    dofs_coord[k].SetSize(dim);
+    eltransf->Transform(fe->GetNodes().IntPoint(k), dofs_coord[k]);
+  }
+
+  V.SetSize(numLocalBasis, numPolyBasis);
+  Vn.SetSize(numDofs, numPolyBasis);
+  // build the data matrix
+  buildElementPolyBasisMat(el_id, x, numDofs, dofs_coord, V, Vn);
+
+  // free the aux variable
+  // for (int k = 0; k < numDofs; k++)
+  // {
+  //    delete dofs_coord[k];
+  // }
 }
 
 } // namespace mfem
