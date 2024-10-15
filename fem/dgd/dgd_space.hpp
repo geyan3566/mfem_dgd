@@ -30,10 +30,22 @@ public:
   /// Get the true number of dofs in the DGD space
   int GetTrueVSize() const override { return vdim * numBasis; }
 
+  const std::vector<int> &GetSelectedBasis(int el_id);
+
+  const std::vector<int> &GetSelectedElement(int b_id);
+
 protected:
   /// @brief Get data for constructing a dgd operator on an element
   void BuildElementDataMat(const int el_id, const mfem::Vector &basisCenter,
                            mfem::DenseMatrix &V, mfem::DenseMatrix &Vn) const;
+
+  /// build the element-wise polynomial basis matrix
+  void BuildElementPolyBasisMat(const int el_id,
+                                const mfem::Vector &basisCenter,
+                                const int numDofs,
+                                const std::vector<mfem::Vector> &dofs_coord,
+                                mfem::DenseMatrix &V,
+                                mfem::DenseMatrix &Vn) const;
 
   /// @brief Solve local prolongation matrix
   void SolveLocalProlongationMat(const int el_id, const mfem::DenseMatrix &V,

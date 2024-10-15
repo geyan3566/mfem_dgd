@@ -153,9 +153,9 @@ void DGDSpace::BuildElementDataMat(int el_id, const Vector &x, DenseMatrix &V,
   ElementTransformation *eltransf = mesh->GetElementTransformation(el_id);
 
   // get the dofs coord
-  Array<Vector> dofs_coord;
+  std::vector<Vector> dofs_coord;
   // std::vector<std::vector<double>> dofs_coord;
-  dofs_coord.SetSize(numDofs);
+  dofs_coord.reserve(numDofs);
   int dim = mesh->Dimension();
   Vector coord(dim);
   for (int k = 0; k < numDofs; k++) {
@@ -166,13 +166,172 @@ void DGDSpace::BuildElementDataMat(int el_id, const Vector &x, DenseMatrix &V,
   V.SetSize(numLocalBasis, numPolyBasis);
   Vn.SetSize(numDofs, numPolyBasis);
   // build the data matrix
-  buildElementPolyBasisMat(el_id, x, numDofs, dofs_coord, V, Vn);
+  BuildElementPolyBasisMat(el_id, x, numDofs, dofs_coord, V, Vn);
+}
 
-  // free the aux variable
-  // for (int k = 0; k < numDofs; k++)
-  // {
-  //    delete dofs_coord[k];
-  // }
+void DGDSpace::BuildElementPolyBasisMat(const int el_id,
+                                        const Vector &basisCenter,
+                                        const int numDofs,
+                                        const std::vector<Vector> &dofs_coord,
+                                        DenseMatrix &V, DenseMatrix &Vn) const {
+  int i, j, k, l;
+  double dx, dy, dz;
+  int b_id;
+  int dim = mesh->Dimension();
+  Vector loc_coord(dim);
+  Vector el_center(dim);
+  mesh->GetElementCenter(el_id, el_center);
+  if (1 == dim) {
+    // form the V matrix
+    for (i = 0; i < numLocalBasis; i++) {
+      b_id = selectedBasis[el_id][i];
+      GetBasisCenter(b_id, loc_coord, basisCenter);
+      dx = loc_coord[0] - el_center[0];
+      for (j = 0; j <= polyOrder; j++) {
+        V(i, j) = pow(dx, j);
+      }
+    }
+
+    // form the Vn matrix
+    for (i = 0; i < numDofs; i++) {
+      loc_coord = dofs_coord[i];
+      dx = loc_coord[0] - el_center[0];
+      for (j = 0; j <= polyOrder; j++) {
+        Vn(i, j) = pow(dx, j);
+      }
+    }
+  } else if (2 == dim) {
+    // form the V matrix
+    for (i = 0; i < numLocalBasis; i++) {
+      b_id = selectedBasis[el_id][i];
+      GetBasisCenter(b_id, loc_coord, basisCenter);
+      dx = loc_coord[0] - el_center[0];
+      dy = loc_coord[1] - el_center[1];
+      int col = 0;
+      for (j = 0; j <= polyOrder; j++) {
+        for (k = 0; k <= j; k++) {
+          V(i, col) = pow(dx, j - k) * pow(dy, k);
+          col++;
+        }
+      }
+    }
+    // form the Vn matrix
+    for (i = 0; i < numDofs; i++) {
+      loc_coord = dofs_coord[i];
+      dx = loc_coord[0] - el_center[0];
+      dy = loc_coord[1] - el_center[1];
+      int col = 0;
+      for (j = 0; j <= polyOrder; j++) {
+        for (k = 0; k <= j; k++) {
+          Vn(i, col) = pow(dx, j - k) * pow(dy, k);
+          col++;
+        }
+      }
+    }
+  } else if (3 == dim) {
+    // form the V matrix
+    for (i = 0; i < numLocalBasis; i++) {
+      b_id = selectedBasis[el_id][i];
+      GetBasisCenter(b_id, loc_coord, basisCenter);
+      dx = loc_coord[0] - el_center[0];
+      dy = loc_coord[1] - el_center[1];
+      dz = loc_coord[2] - el_center[2];
+      int col = 0;
+      for (j = 0; j <= polyOrder; j++) {
+        for (k = 0; k <= j; k++) {
+          for (l = 0; l <= j - k; l++) {
+            V(i, col) = pow(dx, j - k - l) * pow(dy, l) * pow(dz, k);
+            col++;
+          }
+        }
+      }
+    }
+
+    // form the Vn matrix
+    for (i = 0; i < numDofs; i++) {
+      loc_coord = dofs_coord[i];
+      dx = loc_coord[0] - el_center[0];
+      dy = loc_coord[1] - el_center[1];
+      dz = loc_coord[2] - el_center[2];
+      int col = 0;
+      for (j = 0; j <= polyOrder; j++) {
+        for (k = 0; k <= j; k++) {
+          for (l = 0; l <= j - k; l++) {
+            Vn(i, col) = pow(dx, j - k - l) * pow(dy, l) * pow(dz, k);
+            col++;
+          }
+        }
+      }
+    }
+  }
+}
+
+void DGDSpace::SolveLocalProlongationMat(const int el_id, const DenseMatrix &V,
+                                         const DenseMatrix &Vn,
+                                         DenseMatrix &localMat) const {
+  int numDofs = Vn.Height();
+  DenseMatrix b(numLocalBasis, numLocalBasis);
+  b = 0.0;
+  for (int i = 0; i < numLocalBasis; i++) {
+    b(i, i) = 1.0;
+  }
+
+  if (numPolyBasis == numLocalBasis) {
+    DenseMatrixInverse Vinv(V);
+    Vinv.Mult(b, *coef[el_id]);
+  } else {
+    DenseMatrix Vt(V);
+    Vt.Transpose();
+    DenseMatrix VtV(numPolyBasis, numPolyBasis);
+    Mult(Vt, V, VtV);
+
+    DenseMatrixInverse Vinv(VtV);
+    DenseMatrix Vtb(numPolyBasis, numLocalBasis);
+    Mult(Vt, b, Vtb);
+    Vinv.Mult(Vtb, *coef[el_id]);
+  }
+  localMat.SetSize(numDofs, numLocalBasis);
+  Mult(Vn, *coef[el_id], localMat);
+}
+
+void DGDSpace::AssembleProlongationMatrix(const int el_id,
+                                          const DenseMatrix &localMat) {
+  // element id coresponds to the column indices
+  // dofs id coresponds to the row indices
+  // the local reconstruction matrix needs to be assembled `vdim` times
+  // assume the mesh only contains only 1 type of element
+  const Element *el = mesh->GetElement(el_id);
+  const FiniteElement *fe =
+      fec->FiniteElementForGeometry(el->GetGeometryType());
+  const int numDofs = fe->GetDof();
+
+  int numLocalBasis = selectedBasis[el_id].size();
+  Array<int> el_dofs;
+  Array<int> col_index(numLocalBasis);
+  Array<int> row_index(numDofs);
+
+  GetElementVDofs(el_id, el_dofs);
+  for (int e = 0; e < numLocalBasis; e++) {
+    col_index[e] = vdim * selectedBasis[el_id][e];
+  }
+  for (int v = 0; v < vdim; v++) {
+    el_dofs.GetSubArray(v * numDofs, numDofs, row_index);
+    cP->SetSubMatrix(row_index, col_index, localMat, 1);
+    // row_index.LoseData();
+    //  elements id also need to be shift accordingly
+    for (int e = 0; e < numLocalBasis; e++) {
+      col_index[e]++;
+    }
+  }
+}
+
+/// data check functions
+const std::vector<int> &DGDSpace::GetSelectedBasis(int el_id) {
+  return selectedBasis[el_id];
+}
+
+const std::vector<int> &DGDSpace::GetSelectedElement(int b_id) {
+  return selectedElement[b_id];
 }
 
 } // namespace mfem
