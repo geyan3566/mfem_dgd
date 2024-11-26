@@ -17,11 +17,13 @@ public:
   /// class destructor
   ~DGDSpace() = default;
 
-  /// @brief
+  /// @brief initialize the dgd space given the basis center distribution
   void InitializeStencil();
 
   void GetBasisCenter(const int b_id, mfem::Vector &center,
                       const mfem::Vector &basisCenter) const;
+
+  const Vector &GetBasisCenter() { return basisCenter; }
 
   void BuildProlongationMatrix(const mfem::Vector &centers);
 
@@ -30,9 +32,13 @@ public:
   /// Get the true number of dofs in the DGD space
   int GetTrueVSize() const override { return vdim * numBasis; }
 
-  const std::vector<int> &GetSelectedBasis(int el_id);
+  const std::vector<int> &GetSelectedBasis(int el_id) {
+    return selectedBasis[el_id];
+  }
 
-  const std::vector<int> &GetSelectedElement(int b_id);
+  const std::vector<int> &GetSelectedElement(int b_id) {
+    return selectedElement[b_id];
+  }
 
 protected:
   /// @brief Get data for constructing a dgd operator on an element
@@ -50,11 +56,23 @@ protected:
   /// @brief Solve local prolongation matrix
   void SolveLocalProlongationMat(const int el_id, const mfem::DenseMatrix &V,
                                  const mfem::DenseMatrix &Vn,
-                                 mfem::DenseMatrix &localMat) const;
+                                 mfem::DenseMatrix &localMat);
 
   /// @brief Assemble prolongation matrix
   void AssembleProlongationMatrix(const int el_id,
                                   const mfem::DenseMatrix &localMat);
+
+protected:
+  /// compute the derivative of prolongation matrix w.r.t the ith basis center
+  void GetdPdc(const int i, const mfem::Vector &basisCenter,
+               mfem::SparseMatrix &dpdc);
+
+  void buildDerivDataMat(const int el_id, const int b_id, const int xyz,
+                         const mfem::Vector &center, mfem::DenseMatrix &V,
+                         mfem::DenseMatrix &dV, mfem::DenseMatrix &Vn) const;
+
+  void AssembleDerivMatrix(const int el_id, const DenseMatrix &dpdc_block,
+                           mfem::SparseMatrix &dpdc) const;
 
 protected:
   /// number of radial basis function
@@ -81,7 +99,7 @@ protected:
   std::vector<std::vector<double>> elementBasisDist;
 
   /// @brief coefficient matrix for radial basis function
-  mutable mfem::Array<mfem::DenseMatrix *> coef;
+  std::vector<mfem::DenseMatrix> coef;
 };
 } // namespace mfem
 
