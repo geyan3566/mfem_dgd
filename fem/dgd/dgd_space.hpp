@@ -63,13 +63,17 @@ protected:
                                   const mfem::DenseMatrix &localMat);
 
 protected:
+  void BuildElementDerivMat(const int el_id, const int b_id,
+                            const mfem::Vector &basisCenter, const int xyz,
+                            mfem::DenseMatrix &dV) const;
+
+  void BuildDeriveDataMat(const int el_id, const int b_id, const int xyz,
+                          const mfem::Vector &center, mfem::DenseMatrix &V,
+                          mfem::DenseMatrix &dV, mfem::DenseMatrix &Vn) const;
+
   /// compute the derivative of prolongation matrix w.r.t the ith basis center
   void GetdPdc(const int i, const mfem::Vector &basisCenter,
                mfem::SparseMatrix &dpdc);
-
-  void buildDerivDataMat(const int el_id, const int b_id, const int xyz,
-                         const mfem::Vector &center, mfem::DenseMatrix &V,
-                         mfem::DenseMatrix &dV, mfem::DenseMatrix &Vn) const;
 
   void AssembleDerivMatrix(const int el_id, const DenseMatrix &dpdc_block,
                            mfem::SparseMatrix &dpdc) const;

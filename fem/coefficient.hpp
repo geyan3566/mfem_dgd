@@ -758,6 +758,10 @@ public:
   virtual void Eval(Vector &V, ElementTransformation &T,
                     const IntegrationPoint &ip);
 
+  std::function<void(const Vector &, Vector &)> GetFunc() const {
+    return Function;
+  }
+
   virtual ~VectorFunctionCoefficient() {}
 };
 

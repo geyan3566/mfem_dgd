@@ -13,6 +13,7 @@ set(SRCS
   bilinearform.cpp
   bilinearform_ext.cpp
   bilininteg.cpp
+  dgd/dgd_gridfunc.cpp
   dgd/dgd_space.cpp
   integ/bilininteg_br2.cpp
   integ/bilininteg_convection_mf.cpp
@@ -159,6 +160,8 @@ set(HDRS
   bilinearform.hpp
   bilinearform_ext.hpp
   bilininteg.hpp
+  dgd/dgd_gridfunc.hpp
+  dgd/dgd_space.hpp
   integ/bilininteg_diffusion_kernels.hpp
   integ/bilininteg_elasticity_kernels.hpp
   integ/bilininteg_hcurl_kernels.hpp

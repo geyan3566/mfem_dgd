@@ -200,6 +200,7 @@ endif()
 message(STATUS "Floating-point precision: MFEM_PRECISION = ${MFEM_PRECISION}")
 
 # MFEM_DEBUG
+set(CMAKE_BUILD_TYPE debug)
 if (CMAKE_BUILD_TYPE MATCHES "Debug|debug|DEBUG")
   set(MFEM_DEBUG ON)
 else()
@@ -732,6 +733,7 @@ add_custom_target(${MFEM_EXEC_PREREQUISITES_TARGET_NAME})
 
 # Create a target for all examples and, optionally, enable it.
 set(MFEM_ALL_EXAMPLES_TARGET_NAME examples)
+set(MFEM_ENABLE_EXAMPLES true)
 add_mfem_target(${MFEM_ALL_EXAMPLES_TARGET_NAME} ${MFEM_ENABLE_EXAMPLES})
 if (MFEM_ENABLE_EXAMPLES)
   add_subdirectory(examples) #install examples if enabled

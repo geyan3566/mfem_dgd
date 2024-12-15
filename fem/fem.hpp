@@ -19,6 +19,7 @@
 #include "complex_fem.hpp"
 #include "convergence.hpp"
 #include "datacollection.hpp"
+#include "dgd/dgd_gridfunc.hpp"
 #include "dgd/dgd_space.hpp"
 #include "dgmassinv.hpp"
 #include "doftrans.hpp"
