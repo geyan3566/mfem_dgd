@@ -19,6 +19,7 @@ public:
 
   /// @brief initialize the dgd space given the basis center distribution
   void InitializeStencil();
+  void PrintStencil();
 
   void GetBasisCenter(const int b_id, mfem::Vector &center,
                       const mfem::Vector &basisCenter) const;
@@ -91,6 +92,8 @@ protected:
   int numLocalBasis;
   /// number of extra basis
   int extra;
+  ///
+  bool print_stencil = false;
 
   /// basis center
   mfem::Vector basisCenter;

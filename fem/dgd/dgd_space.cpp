@@ -74,6 +74,12 @@ void DGDSpace::InitializeStencil() {
     }
   }
 
+  if (print_stencil) {
+    PrintStencil();
+  }
+}
+
+void DGDSpace::PrintStencil() {
   out << "------Check the stencil------\n";
   out << "------Basis center loca------\n";
   for (int i = 0; i < numBasis; i++) {
@@ -82,7 +88,7 @@ void DGDSpace::InitializeStencil() {
   }
   out << '\n';
   out << "------Elem's  stencil------\n";
-  for (int i = 0; i < num_el; i++) {
+  for (int i = 0; i < mesh->GetNE(); i++) {
     out << "Element " << i << ": ";
     for (int j = 0; j < selectedBasis[i].size(); j++) {
       out << selectedBasis[i][j] << ' ';
