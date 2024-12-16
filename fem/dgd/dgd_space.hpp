@@ -27,6 +27,8 @@ public:
 
   void BuildProlongationMatrix(const mfem::Vector &centers);
 
+  const Operator *GetProlongationMatrix() const override { return cP.get(); }
+
   std::vector<std::size_t> sort_indexes(const std::vector<double> &v);
 
   /// Get the true number of dofs in the DGD space

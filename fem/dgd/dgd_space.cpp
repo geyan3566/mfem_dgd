@@ -139,7 +139,10 @@ void DGDSpace::BuildProlongationMatrix(const Vector &x) {
     AssembleProlongationMatrix(i, localMat);
   }
   cP->Finalize();
-  // ofstream cp_save("prolong.txt");
+  cP_is_set = true;
+  out << "Prolongation operator size: " << cP->Height() << " x " << cP->Width()
+      << '\n';
+  // std::ofstream cp_save("prolong.txt");
   // cP->PrintMatlab(cp_save);
   // cp_save.close();
 }
