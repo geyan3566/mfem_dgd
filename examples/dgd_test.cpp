@@ -60,40 +60,28 @@ int main(int argc, char *argv[]) {
   mfem::VectorFunctionCoefficient u0_fun(num_state, upoly);
   mfem::DgdGridFunction x_dgd(&dgdSpace);
   x_dgd.ProjectCoefficient(u0_fun);
-  std::ofstream dgd_write("x_dgd.txt");
-  x_dgd.Print(dgd_write, num_state);
-  dgd_write.close();
+  // std::ofstream dgd_write("x_dgd.txt");
+  // x_dgd.Print(dgd_write, num_state);
+  // dgd_write.close();
 
   mfem::GridFunction x_exact(&fes);
   x_exact.ProjectCoefficient(u0_fun);
-  std::ofstream fes_write("x_exact.txt");
-  x_exact.Print(fes_write, num_state);
-  fes_write.close();
+  // std::ofstream fes_write("x_exact.txt");
+  // x_exact.Print(fes_write, num_state);
+  // fes_write.close();
 
   // prolong the solution
   mfem::GridFunction x_prolong(&fes);
   x_prolong = 0.0;
   dgdSpace.GetProlongationMatrix()->Mult(x_dgd, x_prolong);
-  std::ofstream prolong_write("x_prolong.txt");
-  x_prolong.Print(prolong_write, num_state);
-  prolong_write.close();
-
-  double max_diff = 0.0;
-  int location = 0;
-  for (int i = 0; i < x_prolong.Size(); ++i) {
-    double diff = std::abs(x_prolong[i] - x_exact[i]);
-    if (diff > max_diff) {
-      max_diff = diff;
-      location = i;
-    }
-  }
-
-  cout << "max difference is " << max_diff << " location " << location << '\n';
+  // std::ofstream prolong_write("x_prolong.txt");
+  // x_prolong.Print(prolong_write, num_state);
+  // prolong_write.close();
 
   x_prolong -= x_exact;
-  std::ofstream diff_write("x_diff.txt");
-  x_prolong.Print(diff_write, num_state);
-  diff_write.close();
+  // std::ofstream diff_write("x_diff.txt");
+  // x_prolong.Print(diff_write, num_state);
+  // diff_write.close();
 
   double l1 = x_prolong.Norml1();
   double l2 = x_prolong.Norml2();
